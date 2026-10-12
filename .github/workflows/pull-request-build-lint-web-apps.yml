@@ -2,6 +2,8 @@ name: Build and lint web apps
 
 on:
   workflow_dispatch:
+  push:
+    branches: [preview]
   pull_request:
     branches:
       - "preview"
@@ -9,6 +11,7 @@ on:
       - "opened"
       - "synchronize"
       - "reopened"
+      - "ready_for_review"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,11 +23,9 @@ jobs:
     name: check:format
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: |
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.requested_reviewers != null
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     env:
-      TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
+      TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
       TURBO_SCM_HEAD: ${{ github.sha }}
     steps:
       - name: Checkout code
@@ -64,11 +65,9 @@ jobs:
     name: Build packages
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: |
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.requested_reviewers != null
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     env:
-      TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
+      TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
       TURBO_SCM_HEAD: ${{ github.sha }}
       NODE_OPTIONS: "--max-old-space-size=4096"
     steps:
@@ -124,11 +123,9 @@ jobs:
     name: check:lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: |
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.requested_reviewers != null
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     env:
-      TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
+      TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
       TURBO_SCM_HEAD: ${{ github.sha }}
     steps:
       - name: Checkout code
@@ -170,7 +167,7 @@ jobs:
     needs: build
     timeout-minutes: 15
     env:
-      TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
+      TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
       TURBO_SCM_HEAD: ${{ github.sha }}
       NODE_OPTIONS: "--max-old-space-size=4096"
     steps:
@@ -211,3 +208,6 @@ jobs:
 
       - name: Run check:types
         run: pnpm turbo run check:types --affected
+
+      - name: Test OIDC sign-in option
+        run: pnpm --filter @plane/blocks exec vitest run --project=dom src/auth/oauth/oidc-option.test.tsx

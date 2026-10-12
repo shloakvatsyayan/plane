@@ -5,41 +5,24 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
 jobs:
   check-version:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+          fetch-depth: 2
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
-
-      - name: Get PR Branch version
-        run: echo "PR_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
-
-      - name: Fetch base branch
-        run: git fetch origin master:master
-
-      - name: Get Master Branch version
+      - name: Compare proposed and base versions
         run: |
-          git checkout master
-          echo "MASTER_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
-
-      - name: Get master branch version and compare
-        run: |
-          echo "Comparing versions: PR version is $PR_VERSION, Master version is $MASTER_VERSION"
-          if [ "$PR_VERSION" == "$MASTER_VERSION" ]; then
-            echo "Version in PR branch is the same as in master. Failing the CI."
+          PROPOSED_VERSION=$(node -p "require('./package.json').version")
+          BASE_VERSION=$(git show HEAD^1:package.json | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")
+          if [ "$PROPOSED_VERSION" = "$BASE_VERSION" ]; then
+            echo "::error::The release must change package.json's version."
             exit 1
-          else
-            echo "Version check passed. Versions are different."
           fi
-        env:
-          PR_VERSION: ${{ env.PR_VERSION }}
-          MASTER_VERSION: ${{ env.MASTER_VERSION }}

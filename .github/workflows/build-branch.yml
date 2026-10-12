@@ -49,6 +49,7 @@ env:
 
 jobs:
   branch_build_setup:
+    if: github.repository == 'makeplane/plane'
     name: Build Setup
     runs-on: ubuntu-24.04
     outputs:

@@ -2,6 +2,8 @@ name: Build and lint API
 
 on:
   workflow_dispatch:
+  push:
+    branches: [preview]
   pull_request:
     branches:
       - "preview"
@@ -13,6 +15,7 @@ on:
       - "reopened"
     paths:
       - "apps/api/**"
+      - ".github/workflows/pull-request-build-lint-api.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,9 +26,7 @@ jobs:
     name: Lint API
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    if: |
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.requested_reviewers != null
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v6
       - name: Set up uv
@@ -46,3 +47,20 @@ jobs:
       - name: Lint apps/api
         working-directory: apps/api
         run: uv run --no-sync ruff check .
+
+  test-authentication:
+    name: Test authentication
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v6
+      - name: Configure isolated test services
+        run: cp apps/api/.env.example apps/api/.env
+      - name: Run authentication regressions
+        run: >-
+          docker compose -f docker-compose-test.yml run --rm --build api-tests
+          pytest plane/tests/unit/authentication/oidc plane/tests/contract/app/test_authentication.py
+      - name: Stop test services
+        if: always()
+        run: docker compose -f docker-compose-test.yml down -v
