@@ -15,6 +15,7 @@ from rest_framework.response import Response
 
 # Module imports
 from plane.app.views import BaseAPIView
+from plane.authentication.provider.oidc.config import public_oidc_config
 from plane.db.models import Workspace
 from plane.license.api.permissions import InstanceAdminPermission
 from plane.license.api.serializers import InstanceSerializer
@@ -123,6 +124,7 @@ class InstanceEndpoint(BaseAPIView):
         data["is_github_enabled"] = IS_GITHUB_ENABLED == "1"
         data["is_gitlab_enabled"] = IS_GITLAB_ENABLED == "1"
         data["is_gitea_enabled"] = IS_GITEA_ENABLED == "1"
+        data.update(public_oidc_config())
         data["is_magic_login_enabled"] = ENABLE_MAGIC_LINK_LOGIN == "1"
         data["is_email_password_enabled"] = ENABLE_EMAIL_PASSWORD == "1"
 

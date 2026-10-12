@@ -7,6 +7,7 @@
 // plane imports
 import { useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
+import { getOIDCOption } from "@plane/blocks/auth";
 import { API_BASE_URL } from "@plane/constants";
 import type { TOAuthConfigs, TOAuthOption } from "@plane/types";
 // assets
@@ -33,9 +34,17 @@ export const useCoreOAuthConfig = (oauthActionText: string): TOAuthConfigs => {
       (config?.is_google_enabled ||
         config?.is_github_enabled ||
         config?.is_gitlab_enabled ||
-        config?.is_gitea_enabled)) ||
+        config?.is_gitea_enabled ||
+        config?.is_oidc_enabled)) ||
     false;
   const oAuthOptions: TOAuthOption[] = [
+    getOIDCOption({
+      config,
+      actionText: oauthActionText,
+      apiBaseUrl: API_BASE_URL,
+      nextPath: next_path,
+      isSpace: false,
+    }),
     {
       id: "google",
       text: `${oauthActionText} with Google`,

@@ -173,3 +173,5 @@ export const LOGIN_MEDIUM_LABELS: Record<TLoginMediums, string> = {
   ...CORE_LOGIN_MEDIUM_LABELS,
   ...EXTENDED_LOGIN_MEDIUM_LABELS,
 } as const;
+
+export * from "./oidc";

@@ -6,7 +6,7 @@
 
 import { Link } from "react-router";
 // helpers
-import { SUPPORT_EMAIL } from "@plane/constants";
+import { OIDC_ERROR_MESSAGES, SUPPORT_EMAIL } from "@plane/constants";
 
 export enum EPageTypes {
   INIT = "INIT",
@@ -59,6 +59,10 @@ export enum EAuthenticationErrorCodes {
   EMAIL_CODE_ATTEMPT_EXHAUSTED_SIGN_UP = "5102",
   // Oauth
   OAUTH_NOT_CONFIGURED = "5104",
+  OAUTH_PROVIDER_UNVERIFIED_EMAIL = "5124",
+  OIDC_NOT_CONFIGURED = "5200",
+  OIDC_PROVIDER_ERROR = "5201",
+  OIDC_ACCOUNT_CONFLICT = "5202",
   GOOGLE_NOT_CONFIGURED = "5105",
   GITHUB_NOT_CONFIGURED = "5110",
   GITLAB_NOT_CONFIGURED = "5111",
@@ -95,6 +99,7 @@ export type TAuthErrorInfo = {
 const errorCodeMessages: {
   [key in EAuthenticationErrorCodes]: { title: string; message: (email?: string) => React.ReactNode };
 } = {
+  ...OIDC_ERROR_MESSAGES,
   // global
   [EAuthenticationErrorCodes.INSTANCE_NOT_CONFIGURED]: {
     title: `Instance not configured`,
@@ -345,6 +350,10 @@ const errorCodeMessages: {
 
 export const authErrorHandler = (errorCode: EAuthenticationErrorCodes, email?: string): TAuthErrorInfo | undefined => {
   const bannerAlertErrorCodes = [
+    EAuthenticationErrorCodes.OAUTH_PROVIDER_UNVERIFIED_EMAIL,
+    EAuthenticationErrorCodes.OIDC_NOT_CONFIGURED,
+    EAuthenticationErrorCodes.OIDC_PROVIDER_ERROR,
+    EAuthenticationErrorCodes.OIDC_ACCOUNT_CONFLICT,
     EAuthenticationErrorCodes.INSTANCE_NOT_CONFIGURED,
     EAuthenticationErrorCodes.INVALID_EMAIL,
     EAuthenticationErrorCodes.EMAIL_REQUIRED,
