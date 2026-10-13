@@ -57,3 +57,29 @@ Sign in with an authorized authentik user, confirm the expected account and work
 The automated suite covers signed-token validation, PKCE parameters, state/nonce/replay protection, provider errors, verified emails, stable account linking, signup restrictions, redirects and session creation. A successful local test run does not establish connectivity to your authentik instance.
 
 Protocol reference: [authentik OAuth2/OIDC provider](https://docs.goauthentik.io/add-secure-apps/providers/oauth2/). The older [bitbay/plane-oidc fork](https://github.com/bitbay/plane-oidc) was reviewed as a reference; this implementation uses the current fork's authentication model and existing dependencies.
+
+## ClubLantern staff access
+
+Set `OIDC_STAFF_WORKSPACE=clublantern` on the backend to enable managed staff membership.
+The workspace must already exist. Verified OIDC claims must contain one of these groups:
+
+| Group                        | Workspace and project membership |
+| ---------------------------- | -------------------------------- |
+| `clublantern-staff`          | Restricted Guest                 |
+| `clublantern-developers`     | Admin                            |
+| `clublantern-administrators` | Admin                            |
+
+Membership is reconciled on each sign-in, including demotions. Authorized staff can
+join when public registration is disabled; unrelated groups cannot sign in. New
+staff skip workspace-creation onboarding and open the managed workspace.
+
+Staff can read project issues, create issues, and edit issues they created or are
+assigned to. They cannot delete content, archive issues, change project settings,
+create workspaces or API tokens, or assign themselves someone else's issue. These
+limits are enforced on authenticated API requests, including direct requests.
+The issue editor and action menus reflect ownership and assignment. Developers
+and administrators retain full workspace and project access.
+
+Existing sessions pick up their managed role after the next OIDC sign-in. Removing
+an authentik group does not revoke an existing Plane session automatically; revoke
+Plane sessions when offboarding or require a fresh login when changing roles.
