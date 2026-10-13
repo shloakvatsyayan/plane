@@ -12,6 +12,7 @@ from plane.authentication.adapter.base import Adapter
 from plane.db.models import Account, User
 
 from .errors import oidc_error
+from .membership import staff_access, sync_membership
 
 
 class OIDCIdentity(Adapter):
@@ -19,6 +20,7 @@ class OIDCIdentity(Adapter):
         super().__init__(request=request, provider="oidc", callback=callback)
         if claims.get("email_verified") is not True:
             raise oidc_error("OAUTH_PROVIDER_UNVERIFIED_EMAIL")
+        self.staff_access = staff_access(claims)
         self.issuer = claims["iss"]
         self.subject = claims["sub"]
         self.account_id = hashlib.sha256(json.dumps([self.issuer, self.subject]).encode()).hexdigest()
@@ -41,6 +43,11 @@ class OIDCIdentity(Adapter):
             raise oidc_error()
         return claim[:255]
 
+    def check_signup(self, email):
+        if self.staff_access is None:
+            return super().check_signup(email)
+        return True
+
     def authenticate(self):
         try:
             with transaction.atomic():
@@ -60,16 +67,21 @@ class OIDCIdentity(Adapter):
                     ):
                         raise oidc_error("OIDC_ACCOUNT_CONFLICT")
                 user = self.complete_login_or_signup()
+                sync_membership(user, self.staff_access)
+                metadata = {"issuer": self.issuer, "subject": self.subject}
+                if self.staff_access is not None:
+                    metadata["staff_access"] = self.staff_access
                 if account:
+                    account.metadata = metadata
                     account.last_connected_at = timezone.now()
-                    account.save(update_fields=["last_connected_at", "updated_at"])
+                    account.save(update_fields=["metadata", "last_connected_at", "updated_at"])
                 else:
                     Account.objects.create(
                         user=user,
                         provider="oidc",
                         provider_account_id=self.account_id,
                         access_token="",
-                        metadata={"issuer": self.issuer, "subject": self.subject},
+                        metadata=metadata,
                     )
                 return user
         except IntegrityError:

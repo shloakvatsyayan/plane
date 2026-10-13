@@ -3,6 +3,7 @@
 # See the LICENSE file for details.
 
 from plane.db.models import WorkspaceMember, ProjectMember
+from plane.authentication.staff_access import can_edit_staff_issue, is_restricted_staff
 from functools import wraps
 from rest_framework.response import Response
 from rest_framework import status
@@ -16,10 +17,13 @@ class ROLE(Enum):
     GUEST = 5
 
 
-def allow_permission(allowed_roles, level="PROJECT", creator=False, model=None):
+def allow_permission(allowed_roles, level="PROJECT", creator=False, model=None, staff_issue=False):
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(instance, request, *args, **kwargs):
+            if staff_issue and is_restricted_staff(request.user):
+                if can_edit_staff_issue(request.user, kwargs["slug"], kwargs["project_id"], kwargs.get("pk")):
+                    return view_func(instance, request, *args, **kwargs)
             # Check for creator if required
             if creator and model:
                 # check if the user is part of the workspace or not

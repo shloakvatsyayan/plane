@@ -99,7 +99,7 @@ class Adapter:
             )
         return
 
-    def __check_signup(self, email):
+    def check_signup(self, email):
         """Check if sign up is enabled or not and raise exception if not enabled"""
 
         # Get configuration value
@@ -348,7 +348,7 @@ class Adapter:
         # If user is not present, create a new user
         if not user:
             # New user
-            self.__check_signup(email)
+            self.check_signup(email)
 
             # Initialize user
             user = User(email=email, username=uuid.uuid4().hex)

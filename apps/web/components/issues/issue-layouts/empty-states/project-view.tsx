@@ -20,7 +20,7 @@ export const ProjectViewEmptyState = observer(function ProjectViewEmptyState() {
 
   // auth
   const isCreatingIssueAllowed = allowPermissions(
-    [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
+    [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
     EUserPermissionsLevel.PROJECT
   );
 
